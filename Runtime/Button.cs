@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace InputProcessing
+namespace StephanHooft.InputProcessing
 {
     /// <summary>
     /// Class to process/store binary inputs such as button presses/releases.

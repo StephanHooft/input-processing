@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace InputProcessing
+namespace StephanHooft.InputProcessing
 {
     /// <summary>
     /// Class to process/store twin (x,y) <see cref="Axis"/> values such as those of a control stick.
