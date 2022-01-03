@@ -1,0 +1,22 @@
+{
+  "name": "com.stephanhooft.input-processing",
+  "version": "1.1.0",
+  "displayName": "Input Processing",
+  "description": "A package that contains helper classes to store and evaluate user input.",
+  "unity": "2020.3",
+  "dependencies": {
+    "com.unity.inputsystem": "1.0.2"
+  },
+  "keywords": [
+    "input",
+    "processing",
+    "button",
+    "axis"
+  ],
+  "author": {
+    "name": "Stephan Hooft",
+    "email": "stephanhooft@gmail.com",
+    "url": ""
+  },
+  "type": "library"
+}
