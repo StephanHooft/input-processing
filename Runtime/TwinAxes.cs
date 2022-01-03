@@ -46,7 +46,7 @@ namespace StephanHooft.InputProcessing
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        private readonly InputAction action;
+        private InputAction action;
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -71,9 +71,7 @@ namespace StephanHooft.InputProcessing
                 throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Vector2 control type.");
             AxisX.OnValueChanged += DirtyAxisUpdateX;
             AxisY.OnValueChanged += DirtyAxisUpdateY;
-            action.performed += ActionPerformed;
-            action.canceled += ActionCanceled;
-            this.action = action;
+            SetInputAction(action);
         }
 
         ~TwinAxes()
@@ -88,7 +86,7 @@ namespace StephanHooft.InputProcessing
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// Set <see cref="Value"/>.
+        /// Sets <see cref="Value"/>.
         /// <para>Both <see cref="Axis"/> of the <see cref="TwinAxes"/> log the <see cref="Time.frameCount"/> and <see cref="Time.unscaledTime"/> 
         /// whenever <see cref="Value"/> is set.</para>
         /// </summary>
@@ -96,20 +94,33 @@ namespace StephanHooft.InputProcessing
         public void SetValue(Vector2 value)
         {
             Value = value;
-            // The Axes' update events are surpressed, because this class is the one setting their value
+            // The Axes' update events are not invoked, because TwinAxes is the one setting their value.
             AxisX.SetValue(Value.x, false);
             AxisY.SetValue(Value.y, false);
             OnValueChanged?.Invoke(Value);
         }
 
         /// <summary>
-        /// Set <see cref="Value"/> to <see cref="Vector2.zero"/>.
+        /// Sets <see cref="Value"/> to <see cref="Vector2.zero"/>.
         /// <para>Both <see cref="Axis"/> of the <see cref="TwinAxes"/> log the <see cref="Time.frameCount"/> and <see cref="Time.unscaledTime"/> 
         /// whenever <see cref="Value"/> is set.</para>
         /// </summary>
         public void SetNeutral()
         {
             SetValue(Vector2.zero);
+        }
+
+        /// <summary>
+        /// Tie the <see cref="TwinAxes"/> to an <see cref="InputAction"/>.
+        /// </summary>
+        /// <param name="action">The <see cref="InputAction"/> to attach to the <see cref="TwinAxes"/>.</param>
+        public void RegisterInputAction(InputAction action)
+        {
+            if (action == null)
+                throw new System.ArgumentNullException("action");
+            if (action.expectedControlType != "Vector2")
+                throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Vector2 control type.");
+            SetInputAction(action);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,6 +135,18 @@ namespace StephanHooft.InputProcessing
         {
             Value = new Vector2(AxisX.Value, yValue);
             OnValueTampered?.Invoke(Value);
+        }
+
+        private void SetInputAction(InputAction action)
+        {
+            if (this.action != null)
+            {
+                this.action.performed -= ActionPerformed;
+                this.action.canceled -= ActionCanceled;
+            }
+            action.performed += ActionPerformed;
+            action.canceled += ActionCanceled;
+            this.action = action;
         }
 
         private void ActionPerformed(InputAction.CallbackContext context)

@@ -45,7 +45,7 @@ namespace StephanHooft.InputProcessing
         private float neutralTime = 0f;
         private float negativeTime = 0f;
         private bool set = false;
-        private readonly InputAction action;
+        private InputAction action;
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -65,9 +65,7 @@ namespace StephanHooft.InputProcessing
                 throw new System.ArgumentNullException("action");
             if (action.expectedControlType != "Axis")
                 throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Axis control type.");
-            action.performed += ActionPerformed;
-            action.canceled += ActionCanceled;
-            this.action = action;
+            SetInputAction(action);
         }
 
         ~Axis()
@@ -82,63 +80,79 @@ namespace StephanHooft.InputProcessing
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// Set <see cref="Value"/>.
+        /// Sets <see cref="Value"/>.
         /// <para>The <see cref="Axis"/> logs the <see cref="Time.frameCount"/> and <see cref="Time.unscaledTime"/> whenever <see cref="Value"/> is set.</para>
         /// </summary>
-        /// <param name="value">The value to set <see cref="Value"/> to.</param>
+        /// <param name="value">The value to set.</param>
         public void SetValue(float value)
         {
             SetValue(value, true);
         }
 
         /// <summary>
-        /// Set the <see cref="Axis"/> value.
+        /// Sets <see cref="Axis"/> value.
         /// <para>The <see cref="Axis"/> logs the <see cref="Time.frameCount"/> and <see cref="Time.unscaledTime"/> whenever <see cref="Value"/> is set.</para>
         /// <para>It is strongly recommended not to set the <paramref name="invoke"/> parameter to false, unless you know what you are doing. 
         /// Other classes such as <see cref="TwinAxes"/> use the <see cref="OnValueChanged"/> event to monitor their instances of <see cref="Axis"/> for value changes.</para>
         /// </summary>
-        /// <param name="value">The value to set <see cref="Value"/> to.</param>
-        /// <param name="invoke">Invokes <see cref="OnValueChanged"/> if true.</param>
+        /// <param name="value">The value to set.</param>
+        /// <param name="invoke">Invokes <see cref="OnValueChanged"/> if set to true.</param>
         public void SetValue(float value, bool invoke = true)
         {
-            if (value > 0f)
+            if(value != Value)
             {
-                if (!Positive)
+                if (value > 0f)
                 {
-                    positiveFrame = Time.frameCount;
-                    positiveTime = Time.unscaledTime;
+                    if (!Positive)
+                    {
+                        positiveFrame = Time.frameCount;
+                        positiveTime = Time.unscaledTime;
+                    }
                 }
-            }
-            else if (value < 0f)
-            {
-                if (!Negative)
+                else if (value < 0f)
                 {
-                    negativeFrame = Time.frameCount;
-                    negativeTime = Time.unscaledTime;
+                    if (!Negative)
+                    {
+                        negativeFrame = Time.frameCount;
+                        negativeTime = Time.unscaledTime;
+                    }
                 }
-            }
-            else
-            {
-                if (!Neutral)
+                else
                 {
-                    neutralFrame = Time.frameCount;
-                    neutralTime = Time.unscaledTime;
+                    if (!Neutral)
+                    {
+                        neutralFrame = Time.frameCount;
+                        neutralTime = Time.unscaledTime;
+                    }
                 }
+                Value = value;
+                if (!set)
+                    set = true;
+                if (invoke)
+                    OnValueChanged?.Invoke(Value);
             }
-            Value = value;
-            if (!set) 
-                set = true;
-            if (invoke) 
-                OnValueChanged?.Invoke(Value);
         }
 
         /// <summary>
-        /// Set <see cref="Value"/> to neutral (0f).
+        /// Sets <see cref="Value"/> to "neutral" (0f).
         /// <para>The <see cref="Axis"/> logs the <see cref="Time.frameCount"/> and <see cref="Time.unscaledTime"/> whenever <see cref="Value"/> is set.</para>
         /// </summary>
         public void SetNeutral()
         {
             SetValue(0f);
+        }
+
+        /// <summary>
+        /// Tie the <see cref="Axis"/> to an <see cref="InputAction"/>.
+        /// </summary>
+        /// <param name="action">The <see cref="InputAction"/> to attach to the <see cref="Axis"/>.</param>
+        public void RegisterInputAction(InputAction action)
+        {
+            if (action == null)
+                throw new System.ArgumentNullException("action");
+            if (action.expectedControlType != "Axis")
+                throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Axis control type.");
+            SetInputAction(action);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,14 +162,14 @@ namespace StephanHooft.InputProcessing
         /// </summary>
         /// <returns>
         /// How many frames <see cref="Value"/> has been positive, if it currently is. If <see cref="Value"/> is currently not positive, this method will return -1.
-        /// This method will also always return -1 if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.
+        /// <para>This method will also always return -1 if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.</para>
         /// </returns>
         public int PositiveDurationFrames()
         {
             if (set && Positive && positiveFrame >= negativeFrame && positiveFrame >= neutralFrame)
                 return Time.frameCount - positiveFrame;
-
-            else return -1;
+            else 
+                return -1;
         }
 
         /// <summary>
@@ -163,14 +177,14 @@ namespace StephanHooft.InputProcessing
         /// </summary>
         /// <returns>
         /// How many seconds <see cref="Value"/> has been positive, if it currently is. If <see cref="Value"/> is currently not positive, this method will return -1f.
-        /// This method will also always return -1f if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.
+        /// <para>This method will also always return -1f if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.</para>
         /// </returns>
         public float PositiveDurationTime()
         {
             if (set && Positive && positiveTime >= negativeTime && positiveTime >= neutralTime)
                 return Time.unscaledTime - positiveTime;
-
-            else return -1f;
+            else 
+                return -1f;
         }
 
         /// <summary>
@@ -178,14 +192,14 @@ namespace StephanHooft.InputProcessing
         /// </summary>
         /// <returns>
         /// How many frames <see cref="Value"/> has been neutral, if it currently is. If <see cref="Value"/> is currently not neutral, this method will return -1.
-        /// This method will also always return -1 if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.
+        /// <para>This method will also always return -1 if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.</para>
         /// </returns>
         public int NeutralDurationFrames()
         {
             if (set && Neutral && neutralFrame >= negativeFrame && neutralFrame >= positiveFrame)
                 return Time.frameCount - neutralFrame;
-
-            else return -1;
+            else 
+                return -1;
         }
 
         /// <summary>
@@ -193,14 +207,14 @@ namespace StephanHooft.InputProcessing
         /// </summary>
         /// <returns>
         /// How many seconds <see cref="Value"/> has been neutral, if it currently is. If <see cref="Value"/> is currently not neutral, this method will return -1f.
-        /// This method will also always return -1f if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.
+        /// <para>This method will also always return -1f if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.</para>
         /// </returns>
         public float NeutralDurationTime()
         {
             if (set && Neutral && neutralTime >= negativeTime && neutralTime >= positiveTime)
                 return Time.unscaledTime - neutralTime;
-
-            else return -1f;
+            else 
+                return -1f;
         }
 
         /// <summary>
@@ -208,14 +222,14 @@ namespace StephanHooft.InputProcessing
         /// </summary>
         /// <returns>
         /// How many frames <see cref="Value"/> has been negative, if it currently is. If <see cref="Value"/> is currently not negative, this method will return -1.
-        /// This method will also always return -1 if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.
+        /// <para>This method will also always return -1 if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.</para>
         /// </returns>
         public int NegativeDurationFrames()
         {
             if (set && Negative && negativeFrame >= positiveFrame && negativeFrame >= neutralFrame)
                 return Time.frameCount - negativeFrame;
-
-            else return -1;
+            else 
+                return -1;
         }
 
         /// <summary>
@@ -223,14 +237,14 @@ namespace StephanHooft.InputProcessing
         /// </summary>
         /// <returns>
         /// How many seconds <see cref="Value"/> has been negative, if it currently is. If <see cref="Value"/> is currently not negative, this method will return -1f.
-        /// This method will also always return -1f if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.
+        /// <para>This method will also always return -1f if <see cref="SetValue(float)"/> or <see cref="SetNeutral"/> have never been called.</para>
         /// </returns>
         public float NegativeDurationTime()
         {
             if (set && Negative && negativeTime >= positiveTime && negativeTime >= neutralTime)
                 return Time.unscaledTime - neutralTime;
-
-            else return -1f;
+            else 
+                return -1f;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,6 +257,18 @@ namespace StephanHooft.InputProcessing
         private void ActionCanceled(InputAction.CallbackContext context)
         {
             SetNeutral();
+        }
+
+        private void SetInputAction(InputAction action)
+        {
+            if (this.action != null)
+            {
+                this.action.performed -= ActionPerformed;
+                this.action.canceled -= ActionCanceled;
+            }
+            action.performed += ActionPerformed;
+            action.canceled += ActionCanceled;
+            this.action = action;
         }
     }
 }

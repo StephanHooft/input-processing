@@ -14,6 +14,74 @@ namespace StephanHooft.InputProcessing
         public bool Value { get; private set; } = false;
 
         /// <summary>
+        /// How long the <see cref="Button"/> has been pressed, if it currently is.
+        /// </summary>
+        /// <returns>
+        /// The amount of frames the <see cref="Button"/> has been pressed, and -1 if it is currently released.
+        /// </returns>
+        public int PressDurationFrames
+        {
+            get
+            {
+                if (set && Value && pressFrame >= releaseFrame)
+                    return Time.frameCount - pressFrame;
+                else
+                    return -1;
+            }
+        }
+
+        /// <summary>
+        /// How long the <see cref="Button"/> has been pressed, if it currently is.
+        /// </summary>
+        /// <returns>
+        /// The amount of seconds the <see cref="Button"/> has been pressed, and -1f if it is currently released.
+        /// </returns>
+        public float PressDurationTime
+        {
+            get
+            {
+                if (set && Value && pressTime >= releaseTime)
+                    return Time.unscaledTime - pressTime;
+                else
+                    return -1f;
+            }
+        }
+
+        /// <summary>
+        /// How long the <see cref="Button"/> has been released, if it currently is.
+        /// </summary>
+        /// <returns>
+        /// The amount of frames the <see cref="Button"/> has been released, and -1 if it is currently pressed.
+        /// </returns>
+        public int ReleasedDurationFrames
+        {
+            get
+            {
+                if (set && !Value && releaseFrame >= pressFrame)
+                    return Time.frameCount - releaseFrame;
+                else
+                    return -1;
+            }
+        }
+
+        /// <summary>
+        /// How long the <see cref="Button"/> has been released, if it currently is.
+        /// </summary>
+        /// <returns>
+        /// The amount of seconds the <see cref="Button"/> has been released, and -1f if it is currently pressed.
+        /// </returns>
+        public float ReleasedDurationTime
+        {
+            get
+            {
+                if (set && !Value && releaseTime >= pressTime)
+                    return Time.unscaledTime - releaseTime;
+                else
+                    return -1f;
+            }
+        }
+
+        /// <summary>
         /// Invoked when <see cref="Value"/> is set through <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/>.
         /// </summary>
         public event System.Action<bool> OnValueChanged;
@@ -27,7 +95,7 @@ namespace StephanHooft.InputProcessing
         private float pressTime = 0f;
         private float releaseTime = 0f;
         private bool set = false;
-        private readonly InputAction action;
+        private InputAction action;
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -43,11 +111,7 @@ namespace StephanHooft.InputProcessing
         /// <param name="action">The <see cref="InputAction"/> to attach to the <see cref="Button"/>.</param>
         public Button(InputAction action)
         {
-            if (action == null) 
-                throw new System.ArgumentNullException("action");
-            action.performed += context => Press();
-            action.canceled += context => Release();
-            this.action = action;
+            SetInputAction(action);
         }
 
         ~Button()
@@ -91,11 +155,10 @@ namespace StephanHooft.InputProcessing
                 releaseAvailable = true;
                 releaseFrame = Time.frameCount;
                 releaseTime = Time.unscaledTime;
-
-                // Let our listeners know that the value of the Button has changed.
                 OnValueChanged?.Invoke(false);
             }
-            if (!set) set = true;
+            if (!set) 
+                set = true;
         }
 
         /// <summary>
@@ -104,12 +167,16 @@ namespace StephanHooft.InputProcessing
         /// </summary>
         public void Toggle()
         {
-            if (Value) Release();
-            else Press();
+            if (Value) 
+                Release();
+            else 
+                Press();
+            if (!set)
+                set = true;
         }
 
         /// <summary>
-        /// Accept the current <see cref="Value"/>. This will prevent the various "Pressed" and "Released" methods from returning true until <see cref="Value"/> changes.
+        /// Accept the current <see cref="Value"/>. This will prevent the various "Pressed" and "Released" methods from returning true until the next time <see cref="Value"/> changes.
         /// </summary>
         public void AcceptValue()
         {
@@ -117,244 +184,229 @@ namespace StephanHooft.InputProcessing
             releaseAvailable = false;
         }
 
+        /// <summary>
+        /// Tie the <see cref="Button"/> to an <see cref="InputAction"/>.
+        /// </summary>
+        /// <param name="action">The <see cref="InputAction"/> to attach to the <see cref="Button"/>.</param>
+        public void RegisterInputAction(InputAction action)
+        {
+            if (action == null)
+                throw new System.ArgumentNullException("action");
+            if (this.action != null)
+            {
+                this.action.performed -= context => Press();
+                this.action.canceled -= context => Release();
+            }
+            SetInputAction(action);
+        }
+
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// Returns true if an unaccepted(!) <see cref="Button"/> press is available.
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate presses.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per press.</para>
+        /// Returns true if an unaccepted <see cref="Button"/> press is available.
+        /// <para><see cref="Button"/> presses must be "accepted" to prevent this method from returning duplicate presses. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
-        /// <param name="autoAcceptValueIfPressed">If set to true, (and if the <see cref="Button"/> is pressed, the <see cref="Button"/> will not return true for that press again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is pressed, "Pressed"-methods will not return true for that press again.</param>
         /// <returns>
         /// True if an unaccepted <see cref="Button"/> press is available.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool Pressed(bool autoAcceptValueIfPressed = false)
+        public bool Pressed(bool autoAccept = false)
         {
             if (set && Value && pressAvailable)
             {
-                if (autoAcceptValueIfPressed) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-            else return false;
+            else 
+                return false;
         }
 
         /// <summary>
-        /// Returns true only if an unaccepted(!) <see cref="Button"/> press on the current frame is available.
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate presses.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per press.</para>
+        /// Returns true if an unaccepted <see cref="<see cref="Button"/>"/> press is available on the current frame.
+        /// <para><see cref="Button"/> presses must be "accepted" to prevent this method from returning duplicate presses. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
-        /// <param name="autoAcceptValueIfPressed">If set to true, (and if the <see cref="Button"/> is pressed, the <see cref="Button"/> will not return true for that press again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is pressed, "Pressed"-methods will not return true for that press again.</param>
         /// <returns>
-        /// True if an unaccepted <see cref="Button"/> press on the current frame is available.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// True if an unaccepted <see cref="Button"/> press is available on the current frame.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool PressedOnCurrentFrame(bool autoAcceptValueIfPressed = false)
+        public bool PressedOnCurrentFrame(bool autoAccept = false)
         {
             if (set && Value && pressAvailable && pressFrame == Time.frameCount)
             {
-                if (autoAcceptValueIfPressed) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-
-            else return false;
+            else 
+                return false;
         }
 
         /// <summary>
-        /// <para>Returns true only if an unaccepted(!) <see cref="Button"/> press within the specified frame buffer is available.</para>
-        /// <para>Even if the button was released in the meantime, a press within the frame buffer will still be recognised.</para>
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate presses.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per press.</para>
+        /// <para>Returns true if an unaccepted <see cref="Button"/> press is available within the specified frame buffer.
+        /// Even if the <see cref="Button"/> has since been released, a press will still be recognised if it falls within the frame buffer.</para>
+        /// <para><see cref="Button"/> presses must be "accepted" to prevent this method from returning duplicate presses. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
         /// <param name="frameBuffer">The amount of frames ago the unaccepted <see cref="Button"/> press may have occured to count as valid.</param>
-        /// <param name="autoAcceptValueIfPressed">If set to true, (and if the <see cref="Button"/> is pressed, the <see cref="Button"/> will not return true for that press again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is pressed, "Pressed"-methods will not return true for that press again.</param>
         /// <returns>
-        /// True if an unaccepted <see cref="Button"/> press within the specified frame buffer is available.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// True if an unaccepted <see cref="Button"/> press is available within the specified frame buffer.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool PressedBuffered(int frameBuffer, bool autoAcceptValueIfPressed = false)
+        public bool PressedInFrameBuffer(int frameBuffer, bool autoAccept = false)
         {
-            if (frameBuffer < 0) throw new System.ArgumentOutOfRangeException("frameBuffer", "frameBuffer value cannot be negative.");
+            if (frameBuffer < 0) 
+                throw new System.ArgumentOutOfRangeException("frameBuffer", "frameBuffer value cannot be negative.");
             if (set && Value && pressAvailable && pressFrame >= Time.frameCount - frameBuffer)
             {
-                if (autoAcceptValueIfPressed) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-
-            else return false;
+            else 
+                return false;
         }
 
         /// <summary>
-        /// <para>Returns true only if an unaccepted(!) <see cref="Button"/> press within the specified time buffer is available.</para>
-        /// <para>Even if the button was released in the meantime, a press within the time buffer will still be recognised.</para>
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate presses.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per press.</para>
+        /// <para>Returns true if an unaccepted <see cref="Button"/> press is available within the specified time buffer.
+        /// Even if the <see cref="Button"/> has since been released, a press will still be recognised if it falls within the time buffer.</para>
+        /// <para><see cref="Button"/> presses must be "accepted" to prevent this method from returning duplicate presses. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
         /// <param name="timeBuffer">The amount of seconds ago the unaccepted <see cref="Button"/> press may have occured to count as valid.</param>
-        /// <param name="autoAcceptValueIfPressed">If set to true, (and if the <see cref="Button"/> is pressed, the <see cref="Button"/> will not return true for that press again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is pressed, "Pressed"-methods will not return true for that press again.</param>
         /// <returns>
-        /// True if an unaccepted <see cref="Button"/> press within the specified time buffer is available.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// True if an unaccepted <see cref="Button"/> press is available within the specified time buffer.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool PressedBuffered(float timeBuffer, bool autoAcceptValueIfPressed = false)
+        public bool PressedInTimeBuffer(float timeBuffer, bool autoAccept = false)
         {
-            if (timeBuffer < 0) throw new System.ArgumentOutOfRangeException("timeBuffer", "timeBuffer value cannot be negative.");
+            if (timeBuffer < 0) 
+                throw new System.ArgumentOutOfRangeException("timeBuffer", "timeBuffer value cannot be negative.");
             if (set && Value && pressAvailable && pressTime >= Time.unscaledTime - timeBuffer)
             {
-                if (autoAcceptValueIfPressed) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-
-            else return false;
+            else 
+                return false;
         }
 
         /// <summary>
-        /// Returns the amount of frames that the <see cref="Button"/> has been pressed, if it currently is.
+        /// Returns true if an unaccepted <see cref="Button"/> release is available.
+        /// <para><see cref="Button"/> releases must be "accepted" to prevent this method from returning duplicate releases. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
-        /// <returns>
-        /// The amount of frames the <see cref="Button"/> has been pressed, if it currently is. If <see cref="Value"/> is currently not true, this method will return -1.
-        /// This method will also always return -1 if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
-        /// </returns>
-        public int PressedDurationFrames()
-        {
-            if (set && Value && pressFrame >= releaseFrame)
-                return Time.frameCount - pressFrame;
-
-            else return -1;
-        }
-
-        /// <summary>
-        /// Returns the amount of seconds that the <see cref="Button"/> has been pressed, if it currently is.
-        /// </summary>
-        /// <returns>
-        /// The amount of seconds the <see cref="Button"/> has been pressed, if it currently is. If <see cref="Value"/> is currently not true, this method will return -1.
-        /// This method will also always return -1 if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
-        /// </returns>
-        public float PressedDurationTime()
-        {
-            if (set && Value && pressTime >= releaseTime)
-                return Time.unscaledTime - pressTime;
-
-            else return -1f;
-        }
-
-        /// <summary>
-        /// Returns true if an unaccepted(!) <see cref="Button"/> release is available.
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate releases.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per release.</para>
-        /// </summary>
-        /// <param name="autoAcceptValueIfReleased">If set to true, (and if the <see cref="Button"/> is released, the <see cref="Button"/> will not return true for that release again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is released, "Released"-methods will not return true for that release again.</param>
         /// <returns>
         /// True if an unaccepted <see cref="Button"/> release is available.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool Released(bool autoAcceptValueIfReleased = false)
+        public bool Released(bool autoAccept = false)
         {
             if (set && !Value && releaseAvailable)
             {
-                if (autoAcceptValueIfReleased) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-
-            else return false;
+            else 
+                return false;
         }
 
         /// <summary>
-        /// Returns true only if an unaccepted(!) <see cref="Button"/> release on the current frame is available.
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate releases.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per release.</para>
+        /// Returns true only if an unaccepted <see cref="Button"/> release is available on the current frame.
+        /// <para><see cref="Button"/> releases must be "accepted" to prevent this method from returning duplicate releases. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
-        /// <param name="autoAcceptValueIfReleased">If set to true, (and if the <see cref="Button"/> is released, the <see cref="Button"/> will not return true for that release again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is released, "Released"-methods will not return true for that release again.</param>
         /// <returns>
         /// True if an unaccepted <see cref="Button"/> press is available on the current frame.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool ReleasedOnCurrentFrame(bool autoAcceptValueIfReleased = false)
+        public bool ReleasedOnCurrentFrame(bool autoAccept = false)
         {
             if (set && !Value && releaseAvailable && releaseFrame >= pressFrame && releaseFrame == Time.frameCount)
             {
-                if (autoAcceptValueIfReleased) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-
-            else return false;
+            else 
+                return false;
         }
 
         /// <summary>
-        /// Returns true only if an unaccepted(!) <see cref="Button"/> release within the specified frame buffer is available.
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate releases.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per release.</para>
+        /// Returns true only if an unaccepted <see cref="Button"/> release is available within the specified frame buffer.
+        /// Even if the <see cref="Button"/> has since been pressed, a release will still be recognised if it falls within the frame buffer.
+        /// <para><see cref="Button"/> releases must be "accepted" to prevent this method from returning duplicate releases. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
         /// <param name="frameBuffer">The amount of frames ago the unaccepted <see cref="Button"/> release may have occured to count as valid.</param>
-        /// <param name="autoAcceptValueIfReleased">If set to true, (and if the <see cref="Button"/> is released, the <see cref="Button"/> will not return true for that release again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is released, "Released"-methods not return true for that release again.</param>
         /// <returns>
-        /// True if an unaccepted <see cref="Button"/> release within the specified frame buffer is available.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// True if an unaccepted <see cref="Button"/> release is available within the specified frame buffer.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool ReleasedBuffered(int frameBuffer, bool autoAcceptValueIfReleased = false)
+        public bool ReleasedInFrameBuffer(int frameBuffer, bool autoAccept = false)
         {
 
             if (frameBuffer < 0) throw new System.ArgumentOutOfRangeException("frameBuffer", "frameBuffer value cannot be negative.");
             if (set && !Value && releaseAvailable && releaseFrame >= pressFrame && releaseFrame >= Time.frameCount - frameBuffer)
             {
-                if (autoAcceptValueIfReleased) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-
-            else return false;
+            else 
+                return false;
         }
 
         /// <summary>
-        /// Returns true only if an unaccepted(!) <see cref="Button"/> release within the specified time buffer is available.
-        /// <para>If this method returns true, <see cref="AcceptValue"/> should be called afterwards to prevent the <see cref="Button"/> from returning duplicate releases.</para>
-        /// <para>Alternatively, if <paramref name="autoAcceptValueIfPressed"/> is set to true, this method will only return true once per release.</para>
+        /// Returns true only if an unaccepted <see cref="Button"/> release is available within the specified time buffer.
+        /// Even if the <see cref="Button"/> has since been pressed, a release will still be recognised if it falls within the time buffer.
+        /// <para><see cref="Button"/> releases must be "accepted" to prevent this method from returning duplicate releases. This can be done by setting <paramref name="autoAccept"/>
+        /// to true, or by calling <see cref="AcceptValue"/> manually.</para>
         /// </summary>
         /// <param name="timeBuffer">The amount of seconds ago the unaccepted <see cref="Button"/> release may have occured to count as valid.</param>
-        /// <param name="autoAcceptValueIfReleased">If set to true, (and if the <see cref="Button"/> is released, the <see cref="Button"/> will not return true for that release again.</param>
+        /// <param name="autoAccept">If set to true, (and if the <see cref="Button"/> is released, "Released"-methods will not return true for that release again.</param>
         /// <returns>
-        /// True if an unaccepted <see cref="Button"/> release within the specified time buffer is available.
-        /// This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
+        /// True if an unaccepted <see cref="Button"/> release is available within the specified time buffer.
+        /// <para>This method will always return false if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.</para>
         /// </returns>
-        public bool ReleasedBuffered(float timeBuffer, bool autoAcceptValueIfReleased = false)
+        public bool ReleasedInTimeBuffer(float timeBuffer, bool autoAccept = false)
         {
             if (timeBuffer < 0) throw new System.ArgumentOutOfRangeException("timeBuffer", "timeBuffer value cannot be negative.");
             if (set && !Value && releaseAvailable && releaseTime >= pressTime && pressTime >= Time.unscaledTime - timeBuffer)
             {
-                if (autoAcceptValueIfReleased) AcceptValue();
+                if (autoAccept) 
+                    AcceptValue();
                 return true;
             }
-
-            else return false;
+            else 
+                return false;
         }
 
-        /// <summary>
-        /// Returns the amount of frames that the <see cref="Button"/> has been released, if it currently is.
-        /// </summary>
-        /// <returns>
-        /// The amount of frames the <see cref="Button"/> has been released, if it currently is. If <see cref="Value"/> is currently not false, this method will return -1.
-        /// This method will always return -1 if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
-        /// </returns>
-        public int ReleasedDurationFrames()
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        private void SetInputAction(InputAction action)
         {
-            if (set && !Value && releaseFrame >= pressFrame)
-                return Time.frameCount - releaseFrame;
-
-            else return -1;
-        }
-
-        /// <summary>
-        /// Returns the amount of seconds that the <see cref="Button"/> has been released, if it currently is.
-        /// </summary>
-        /// <returns>
-        /// The amount of seconds the <see cref="Button"/> has been released, if it currently is. If <see cref="Value"/> is currently not false, this method will return -1.
-        /// This method will also always return -1 if <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/> have never been called.
-        /// </returns>
-        public float ReleasedDurationTime()
-        {
-            if (set && !Value && releaseTime >= pressTime)
-                return Time.unscaledTime - releaseTime;
-
-            else return -1f;
+            if (action == null)
+                throw new System.ArgumentNullException("action");
+            if (this.action != null)
+            {
+                this.action.performed -= context => Press();
+                this.action.canceled -= context => Release();
+            }
+            action.performed += context => Press();
+            action.canceled += context => Release();
+            this.action = action;
         }
     }
 }
