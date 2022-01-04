@@ -82,9 +82,19 @@ namespace StephanHooft.InputProcessing
         }
 
         /// <summary>
-        /// Invoked when <see cref="Value"/> is set through <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/>.
+        /// Invoked when <see cref="Value"/> is set through either <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/>.
         /// </summary>
         public event System.Action<bool> OnValueChanged;
+
+        /// <summary>
+        /// Invoked when the <see cref="Button"/> is pressed.
+        /// </summary>
+        public event System.Action OnPressed;
+
+        /// <summary>
+        /// Invoked when the <see cref="Button"/> is released.
+        /// </summary>
+        public event System.Action OnReleased;
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -137,6 +147,7 @@ namespace StephanHooft.InputProcessing
                 releaseAvailable = false;
                 pressFrame = Time.frameCount;
                 pressTime = Time.unscaledTime;
+                OnPressed?.Invoke();
                 OnValueChanged?.Invoke(true);
             }
             if (!set) 
@@ -155,6 +166,7 @@ namespace StephanHooft.InputProcessing
                 releaseAvailable = true;
                 releaseFrame = Time.frameCount;
                 releaseTime = Time.unscaledTime;
+                OnReleased?.Invoke();
                 OnValueChanged?.Invoke(false);
             }
             if (!set) 
@@ -171,8 +183,6 @@ namespace StephanHooft.InputProcessing
                 Release();
             else 
                 Press();
-            if (!set)
-                set = true;
         }
 
         /// <summary>
