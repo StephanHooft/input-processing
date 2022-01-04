@@ -19,16 +19,7 @@ namespace StephanHooft.InputProcessing
         /// <returns>
         /// The amount of frames the <see cref="Button"/> has been pressed, and -1 if it is currently released.
         /// </returns>
-        public int PressDurationFrames
-        {
-            get
-            {
-                if (set && Value && pressFrame >= releaseFrame)
-                    return Time.frameCount - pressFrame;
-                else
-                    return -1;
-            }
-        }
+        public int PressDurationFrames => set && Value && pressFrame >= releaseFrame ? Time.frameCount - pressFrame : -1;
 
         /// <summary>
         /// How long the <see cref="Button"/> has been pressed, if it currently is.
@@ -36,16 +27,7 @@ namespace StephanHooft.InputProcessing
         /// <returns>
         /// The amount of seconds the <see cref="Button"/> has been pressed, and -1f if it is currently released.
         /// </returns>
-        public float PressDurationTime
-        {
-            get
-            {
-                if (set && Value && pressTime >= releaseTime)
-                    return Time.unscaledTime - pressTime;
-                else
-                    return -1f;
-            }
-        }
+        public float PressDurationTime => set && Value && pressTime >= releaseTime ? Time.unscaledTime - pressTime : -1f;
 
         /// <summary>
         /// How long the <see cref="Button"/> has been released, if it currently is.
@@ -53,16 +35,7 @@ namespace StephanHooft.InputProcessing
         /// <returns>
         /// The amount of frames the <see cref="Button"/> has been released, and -1 if it is currently pressed.
         /// </returns>
-        public int ReleasedDurationFrames
-        {
-            get
-            {
-                if (set && !Value && releaseFrame >= pressFrame)
-                    return Time.frameCount - releaseFrame;
-                else
-                    return -1;
-            }
-        }
+        public int ReleasedDurationFrames => set && !Value && releaseFrame >= pressFrame ? Time.frameCount - releaseFrame : -1;
 
         /// <summary>
         /// How long the <see cref="Button"/> has been released, if it currently is.
@@ -70,16 +43,7 @@ namespace StephanHooft.InputProcessing
         /// <returns>
         /// The amount of seconds the <see cref="Button"/> has been released, and -1f if it is currently pressed.
         /// </returns>
-        public float ReleasedDurationTime
-        {
-            get
-            {
-                if (set && !Value && releaseTime >= pressTime)
-                    return Time.unscaledTime - releaseTime;
-                else
-                    return -1f;
-            }
-        }
+        public float ReleasedDurationTime => set && !Value && releaseTime >= pressTime ? Time.unscaledTime - releaseTime : -1f;
 
         /// <summary>
         /// Invoked when <see cref="Value"/> is set through either <see cref="Press"/>, <see cref="Release"/>, or <see cref="Toggle"/>.

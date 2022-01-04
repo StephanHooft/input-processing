@@ -11,7 +11,7 @@ namespace StephanHooft.InputProcessing
         /// <summary>
         /// The value of the <see cref="TwinAxes"/> represented as a <see cref="Vector2"/>.
         /// </summary>
-        public Vector2 Value { get; private set; } = Vector2.zero;
+        public Vector2 Value => new Vector2(AxisX.Value, AxisY.Value);
 
         /// <summary>
         /// The angle of <see cref="Value"/>, as compared to <see cref="Vector2.up"/>.
@@ -30,19 +30,14 @@ namespace StephanHooft.InputProcessing
 
         /// <summary>
         /// True if the <see cref="Axis.Value"/> of <see cref="AxisX"/> and <see cref="AxisY"/> are both neutral (0f).
-        /// <para>Will always be false if <see cref="SetValue(Vector2)"/> or <see cref="SetNeutral"/> have never been called.</para>
+        /// <para>Will always be false if <see cref="SetValue(Vector2)"/> has never been called.</para>
         /// </summary>
-        public bool Neutral { get { if (AxisX.Neutral && AxisY.Neutral) return true; else return false; } }
+        public bool Neutral => AxisX.Neutral && AxisY.Neutral;
 
         /// <summary>
-        /// Invoked when <see cref="Value"/> is set through <see cref="SetValue(Vector2)"/> or <see cref="SetNeutral"/>.
+        /// Invoked when <see cref="Value"/> is set through <see cref="SetValue(Vector2)"/>.
         /// </summary>
         public event System.Action<Vector2> OnValueChanged;
-
-        /// <summary>
-        /// Invoked when the <see cref="Axis.Value"/> of <see cref="AxisX"/> or <see cref="AxisY"/> is set by something other than the <see cref="TwinAxes"/>.
-        /// </summary>
-        public event System.Action<Vector2> OnValueTampered;
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -54,10 +49,7 @@ namespace StephanHooft.InputProcessing
         /// Create a new <see cref="TwinAxes"/>.
         /// </summary>
         public TwinAxes()
-        {
-            AxisX.OnValueChanged += DirtyAxisUpdateX;
-            AxisY.OnValueChanged += DirtyAxisUpdateY;
-        }
+        {}
 
         /// <summary>
         /// Create a new <see cref="TwinAxes"/> and tie it to an <see cref="InputAction"/>.
@@ -69,8 +61,6 @@ namespace StephanHooft.InputProcessing
                 throw new System.ArgumentNullException("action");
             if (action.expectedControlType != "Vector2")
                 throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Vector2 control type.");
-            AxisX.OnValueChanged += DirtyAxisUpdateX;
-            AxisY.OnValueChanged += DirtyAxisUpdateY;
             SetInputAction(action);
         }
 
@@ -93,21 +83,10 @@ namespace StephanHooft.InputProcessing
         /// <param name="value">The value to set <see cref="Value"/> to.</param>
         public void SetValue(Vector2 value)
         {
-            Value = value;
             // The Axes' update events are not invoked, because TwinAxes is the one setting their value.
-            AxisX.SetValue(Value.x, false);
-            AxisY.SetValue(Value.y, false);
+            AxisX.SetValue(value.x, false);
+            AxisY.SetValue(value.y, false);
             OnValueChanged?.Invoke(Value);
-        }
-
-        /// <summary>
-        /// Sets <see cref="Value"/> to <see cref="Vector2.zero"/>.
-        /// <para>Both <see cref="Axis"/> of the <see cref="TwinAxes"/> log the <see cref="Time.frameCount"/> and <see cref="Time.unscaledTime"/> 
-        /// whenever <see cref="Value"/> is set.</para>
-        /// </summary>
-        public void SetNeutral()
-        {
-            SetValue(Vector2.zero);
         }
 
         /// <summary>
@@ -124,18 +103,6 @@ namespace StephanHooft.InputProcessing
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        private void DirtyAxisUpdateX(float xValue)
-        {
-            Value = new Vector2(xValue, AxisY.Value);
-            OnValueTampered?.Invoke(Value);
-        }
-
-        private void DirtyAxisUpdateY(float yValue)
-        {
-            Value = new Vector2(AxisX.Value, yValue);
-            OnValueTampered?.Invoke(Value);
-        }
 
         private void SetInputAction(InputAction action)
         {
@@ -156,7 +123,7 @@ namespace StephanHooft.InputProcessing
 
         private void ActionCanceled(InputAction.CallbackContext context)
         {
-            SetNeutral();
+            SetValue(Vector2.zero);
         }
     }
 }

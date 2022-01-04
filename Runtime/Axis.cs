@@ -68,7 +68,7 @@ namespace StephanHooft.InputProcessing
         /// Create a new <see cref="Axis"/>.
         /// </summary>
         public Axis()
-        { }
+        {}
 
         /// <summary>
         /// Create a new <see cref="Axis"/> and tie it to an <see cref="InputAction"/>.

@@ -1,6 +1,6 @@
 {
   "name": "com.stephanhooft.input-processing",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "displayName": "Input Processing",
   "description": "A package that contains helper classes to store and evaluate user input.",
   "unity": "2020.3",
