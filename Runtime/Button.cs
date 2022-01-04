@@ -210,8 +210,6 @@ namespace StephanHooft.InputProcessing
             SetInputAction(action);
         }
 
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
         /// <summary>
         /// Returns true if an unaccepted <see cref="Button"/> press is available.
         /// <para><see cref="Button"/> presses must be "accepted" to prevent this method from returning duplicate presses. This can be done by setting <paramref name="autoAccept"/>
