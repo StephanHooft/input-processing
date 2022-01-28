@@ -60,7 +60,7 @@ namespace StephanHooft.InputProcessing
             if (action == null) 
                 throw new System.ArgumentNullException("action");
             if (action.expectedControlType != "Vector2")
-                throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Vector2 control type.");
+                throw new System.ArgumentException(string.Format("InputAction {0} does not have an expected Vector2 control type.", action.name));
             SetInputAction(action);
         }
 
@@ -98,7 +98,7 @@ namespace StephanHooft.InputProcessing
             if (action == null)
                 throw new System.ArgumentNullException("action");
             if (action.expectedControlType != "Vector2")
-                throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Vector2 control type.");
+                throw new System.ArgumentException(string.Format("InputAction {0} does not have an expected Vector2 control type.", action.name));
             SetInputAction(action);
         }
 

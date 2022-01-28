@@ -79,7 +79,7 @@ namespace StephanHooft.InputProcessing
             if (action == null)
                 throw new System.ArgumentNullException("action");
             if (action.expectedControlType != "Axis")
-                throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Axis control type.");
+                throw new System.ArgumentException(string.Format("InputAction {0} does not have an expected Axis control type.", action.name));
             SetInputAction(action);
         }
 
@@ -244,7 +244,7 @@ namespace StephanHooft.InputProcessing
             if (action == null)
                 throw new System.ArgumentNullException("action");
             if (action.expectedControlType != "Axis")
-                throw new System.ArgumentException("InputAction " + action.name + " does not have an expected Axis control type.");
+                throw new System.ArgumentException(string.Format("InputAction {0} does not have an expected Axis control type.", action.name));
             SetInputAction(action);
         }
 
