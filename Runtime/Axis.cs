@@ -260,7 +260,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("durationFrames", ValueMustNotBeNegative("durationFrames"));
             return
-                Negative && duration >= GetNegativeDurationFrames();
+                Negative && duration <= GetNegativeDurationFrames();
         }
 
         /// <summary>
@@ -283,7 +283,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("duration", ValueMustNotBeNegative("duration"));
             return
-                Negative && duration >= GetNegativeDurationSeconds();
+                Negative && duration <= GetNegativeDurationSeconds();
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("durationFrames", ValueMustNotBeNegative("durationFrames"));
             return
-                Neutral && duration >= GetNeutralDurationFrames();
+                Neutral && duration <= GetNeutralDurationFrames();
         }
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace StephanHooft.InputProcessing
                     new System.ArgumentOutOfRangeException("durationSeconds",
                     ValueMustNotBeNegative("durationSeconds"));
             return
-                Neutral && duration >= GetNeutralDurationSeconds();
+                Neutral && duration <= GetNeutralDurationSeconds();
         }
 
         /// <summary>
@@ -350,7 +350,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("durationFrames", ValueMustNotBeNegative("durationFrames"));
             return
-                Positive && duration >= GetPositiveDurationFrames();
+                Positive && duration <= GetPositiveDurationFrames();
         }
 
         /// <summary>
@@ -374,7 +374,7 @@ namespace StephanHooft.InputProcessing
                     new System.ArgumentOutOfRangeException("durationSeconds",
                     ValueMustNotBeNegative("durationSeconds"));
             return
-                Positive && duration >= GetPositiveDurationSeconds();
+                Positive && duration <= GetPositiveDurationSeconds();
         }
 
         /// <summary>
