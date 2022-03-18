@@ -260,7 +260,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("durationFrames", ValueMustNotBeNegative("durationFrames"));
             return
-                Negative && duration >= frame;
+                Negative && duration >= GetNegativeDurationFrames();
         }
 
         /// <summary>
@@ -283,7 +283,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("duration", ValueMustNotBeNegative("duration"));
             return
-                Negative && duration >= time;
+                Negative && duration >= GetNegativeDurationSeconds();
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("durationFrames", ValueMustNotBeNegative("durationFrames"));
             return
-                Neutral && duration >= frame;
+                Neutral && duration >= GetNeutralDurationFrames();
         }
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace StephanHooft.InputProcessing
                     new System.ArgumentOutOfRangeException("durationSeconds",
                     ValueMustNotBeNegative("durationSeconds"));
             return
-                Neutral && duration >= time;
+                Neutral && duration >= GetNeutralDurationSeconds();
         }
 
         /// <summary>
@@ -350,7 +350,7 @@ namespace StephanHooft.InputProcessing
                 throw
                     new System.ArgumentOutOfRangeException("durationFrames", ValueMustNotBeNegative("durationFrames"));
             return
-                Positive && duration >= frame;
+                Positive && duration >= GetPositiveDurationFrames();
         }
 
         /// <summary>
@@ -374,7 +374,7 @@ namespace StephanHooft.InputProcessing
                     new System.ArgumentOutOfRangeException("durationSeconds",
                     ValueMustNotBeNegative("durationSeconds"));
             return
-                Positive && duration >= time;
+                Positive && duration >= GetPositiveDurationSeconds();
         }
 
         /// <summary>
