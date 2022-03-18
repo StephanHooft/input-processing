@@ -94,7 +94,8 @@ namespace StephanHooft.InputProcessing
         /// <summary>
         /// A <see cref="Button"/> can implicitly be converted to its <see cref="bool"/> value.
         /// </summary>
-        public static implicit operator bool(Button button) => button.Value;
+        public static implicit operator bool(Button button)
+            => button.Value;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         #endregion

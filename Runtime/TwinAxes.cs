@@ -229,6 +229,12 @@ namespace StephanHooft.InputProcessing
         public class Axis : InputProcessing.Axis
         {
             /// <summary>
+            /// An <see cref="Axis"/> can implicitly be converted to its <see cref="float"/> value.
+            /// </summary>
+            public static implicit operator float(Axis axis)
+                => axis.Value;
+
+            /// <summary>
             /// Creates a new <see cref="Axis"/>. Used by a <see cref="TwinAxes"/> to create the <see cref="Axis"/>.
             /// </summary>
             /// <param name="setMethod">
